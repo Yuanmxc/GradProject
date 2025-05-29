@@ -144,21 +144,19 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
         case 3: // unload
             std::cout << "[" << timestamp << "] 事件：显式库卸载\n"
                      << "调用函数: dlclose\n"
-                     << "目标句柄: 0x" << std::hex << e->lib_addr << std::dec << "\n";
-            if (strlen(e->lib_path) > 0) {
-                std::cout << "卸载库路径: " << e->lib_path << "\n";
-            }
-            std::cout << "卸载结果: 成功\n\n";
+                     << "目标句柄: 0x" << std::hex << e->lib_addr << std::dec << "\n"
+                     << "卸载库路径: " << (strlen(e->lib_path) > 0 ? e->lib_path : "未知") << "\n"
+                     << "卸载结果: 成功\n\n";
             break;
 
         case 4: // symbol resolve
             if (e->symbol_addr == 0) {
-                std::cout << "[" << timestamp << "] 事件：符号解析事件\n";
+                std::cout << "[" << timestamp << "] 事件：符号解析事件\n"
+                         << "查找库句柄: 0x" << std::hex << e->lib_addr << std::dec << "\n"
+                         << "请求符号: " << e->symbol_name << "\n";
                 if (strlen(e->lib_path) > 0) {
                     std::cout << "所属库: " << e->lib_path << "\n";
                 }
-                std::cout << "查找库句柄: 0x" << std::hex << e->lib_addr << std::dec << "\n"
-                         << "请求符号: " << e->symbol_name << "\n";
             } else {
                 std::cout << "解析地址: 0x" << std::hex << e->symbol_addr << std::dec << "\n\n";
             }

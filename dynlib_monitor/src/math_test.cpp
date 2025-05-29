@@ -1,7 +1,6 @@
 #include <iostream>
 #include <dlfcn.h>
 #include <unistd.h>
-#include <cmath>
 
 int main() {
     std::cout << "开始测试动态库加载和函数调用..." << std::endl;
@@ -14,22 +13,38 @@ int main() {
     }
 
     // 获取 cos 函数的地址
-    typedef double (*cos_func)(double);
-    cos_func cos_ptr = (cos_func)dlsym(handle, "cos");
+    typedef double (*math_func)(double);
+    
+    // 解析 cos 函数
+    math_func cos_ptr = (math_func)dlsym(handle, "cos");
     if (!cos_ptr) {
         std::cerr << "无法获取 cos 函数: " << dlerror() << std::endl;
         dlclose(handle);
         return 1;
     }
 
-    // 调用动态库函数
-    double result = cos_ptr(3.14159);
-    std::cout << "cos(π) = " << result << std::endl;
+    // 解析 sqrt 函数
+    math_func sqrt_ptr = (math_func)dlsym(handle, "sqrt");
+    if (!sqrt_ptr) {
+        std::cerr << "无法获取 sqrt 函数: " << dlerror() << std::endl;
+        dlclose(handle);
+        return 1;
+    }
 
-    // 使用标准库中的其他数学函数
-    double sqrt_result = sqrt(16.0);
-    double log_result = log(10.0);
+    // 解析 log 函数
+    math_func log_ptr = (math_func)dlsym(handle, "log");
+    if (!log_ptr) {
+        std::cerr << "无法获取 log 函数: " << dlerror() << std::endl;
+        dlclose(handle);
+        return 1;
+    }
+
+    // 调用动态库函数
+    double cos_result = cos_ptr(3.14159);
+    double sqrt_result = sqrt_ptr(16.0);
+    double log_result = log_ptr(10.0);
     
+    std::cout << "cos(π) = " << cos_result << std::endl;
     std::cout << "sqrt(16) = " << sqrt_result << std::endl;
     std::cout << "log(10) = " << log_result << std::endl;
 
