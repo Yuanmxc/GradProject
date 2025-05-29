@@ -129,9 +129,9 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
                          << "加载库路径: " << real_path << "\n"
                          << "标志: " << get_dlopen_flags(e->flags) << "\n"
                          << "进程名: " << e->comm << "\n"
-                         << "进程ID: " << e->pid << "\n";
+                         << "进程ID: " << e->pid << "\n" << std::flush;
             } else {
-                std::cout << "加载基址: 0x" << std::hex << e->lib_addr << std::dec << "\n\n";
+                std::cout << "加载基址: 0x" << std::hex << e->lib_addr << std::dec << "\n\n" << std::flush;
             }
             break;
 
@@ -142,7 +142,7 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
                      << "卸载库路径: " << (strlen(e->lib_path) > 0 ? e->lib_path : "未知") << "\n"
                      << "卸载结果: 成功\n"
                      << "进程名: " << e->comm << "\n"
-                     << "进程ID: " << e->pid << "\n\n";
+                     << "进程ID: " << e->pid << "\n\n" << std::flush;
             break;
 
         case 3: // symbol resolve
@@ -154,10 +154,10 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
                     std::cout << "所属库: " << e->lib_path << "\n";
                 }
                 std::cout << "进程名: " << e->comm << "\n"
-                         << "进程ID: " << e->pid << "\n";
+                         << "进程ID: " << e->pid << "\n" << std::flush;
             } else {
                 // 这里是 dlsym 返回时的事件触发，打印解析地址
-                std::cout << "解析地址: 0x" << std::hex << e->symbol_addr << std::dec << "\n\n";
+                std::cout << "解析地址: 0x" << std::hex << e->symbol_addr << std::dec << "\n\n" << std::flush;
             }
             break;
     }
@@ -176,6 +176,9 @@ void print_usage(const char* program_name) {
 
 int main(int argc, char *argv[])
 {
+    // 设置标准输出为无缓冲模式
+    std::cout.setf(std::ios::unitbuf);
+    
     struct dynlib_monitor_bpf *skel;
     struct perf_buffer *pb = NULL;
     int err = 0;

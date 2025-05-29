@@ -244,4 +244,5 @@ CMakeFiles/dynlib_monitor_gui.dir/src/processmanager.cpp.o: \
  /usr/include/qt/QtCore/qfileinfo.h \
  /usr/include/qt/QtCore/QCoreApplication \
  /usr/include/qt/QtCore/qcoreapplication.h \
- /usr/include/qt/QtCore/qcoreevent.h /usr/include/qt/QtCore/qeventloop.h
+ /usr/include/qt/QtCore/qcoreevent.h /usr/include/qt/QtCore/qeventloop.h \
+ /usr/include/qt/QtCore/QProcessEnvironment

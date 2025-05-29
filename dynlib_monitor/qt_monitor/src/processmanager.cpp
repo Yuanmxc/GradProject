@@ -3,6 +3,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QCoreApplication>
+#include <QProcessEnvironment>
 
 ProcessManager::ProcessManager(EventData* eventData, QObject *parent)
     : QObject(parent)
@@ -11,6 +12,12 @@ ProcessManager::ProcessManager(EventData* eventData, QObject *parent)
 {
     // 设置进程通道，将标准输出和标准错误都重定向到我们的程序
     process->setProcessChannelMode(QProcess::MergedChannels);
+    
+    // 设置环境变量，禁用输出缓冲
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert("PYTHONUNBUFFERED", "1");  // 如果后端是Python程序
+    env.insert("GLIBC_UNBUFFERED", "1");  // 通用的unbuffered设置
+    process->setProcessEnvironment(env);
     
     connect(process, &QProcess::readyReadStandardOutput, this, &ProcessManager::handleProcessOutput);
     connect(process, &QProcess::errorOccurred, this, &ProcessManager::handleProcessError);
