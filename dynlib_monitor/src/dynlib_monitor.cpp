@@ -27,7 +27,6 @@ struct event {
     char symbol_name[32];
     int event_type;
     int flags;
-    char dependent_lib[64];
     __u64 symbol_addr;
     int result;
 };
@@ -125,30 +124,28 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
         case 1: // explicit load
             if (e->lib_addr == 0) {
                 std::string real_path = get_lib_real_path(e->lib_path);
-                std::cout << "[" << timestamp << "] 事件：显式库加载请求\n"
+                std::cout << "[" << timestamp << "] 事件：动态库加载\n"
                          << "调用函数: dlopen\n"
-                         << "请求路径: " << real_path << "\n"
-                         << "标志: " << get_dlopen_flags(e->flags) << "\n";
+                         << "加载库路径: " << real_path << "\n"
+                         << "标志: " << get_dlopen_flags(e->flags) << "\n"
+                         << "进程名: " << e->comm << "\n"
+                         << "进程ID: " << e->pid << "\n";
             } else {
                 std::cout << "加载基址: 0x" << std::hex << e->lib_addr << std::dec << "\n\n";
             }
             break;
 
-        case 2: // implicit load
-            std::cout << "[" << timestamp << "] 事件：动态库隐式加载\n"
-                     << "已加载库: " << e->lib_path << "\n"
-                     << "依赖关系: " << e->dependent_lib << "\n\n";
-            break;
-
-        case 3: // unload
+        case 2: // unload
             std::cout << "[" << timestamp << "] 事件：显式库卸载\n"
                      << "调用函数: dlclose\n"
                      << "目标句柄: 0x" << std::hex << e->lib_addr << std::dec << "\n"
-                     << "卸载库: " << (strlen(e->lib_path) > 0 ? e->lib_path : "未知") << "\n"
-                     << "卸载结果: 成功\n\n";
+                     << "卸载库路径: " << (strlen(e->lib_path) > 0 ? e->lib_path : "未知") << "\n"
+                     << "卸载结果: 成功\n"
+                     << "进程名: " << e->comm << "\n"
+                     << "进程ID: " << e->pid << "\n\n";
             break;
 
-        case 4: // symbol resolve
+        case 3: // symbol resolve
             if (e->symbol_addr == 0) {
                 std::cout << "[" << timestamp << "] 事件：符号解析事件\n"
                          << "查找库句柄: 0x" << std::hex << e->lib_addr << std::dec << "\n"
@@ -156,14 +153,12 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
                 if (strlen(e->lib_path) > 0) {
                     std::cout << "所属库: " << e->lib_path << "\n";
                 }
+                std::cout << "进程名: " << e->comm << "\n"
+                         << "进程ID: " << e->pid << "\n";
             } else {
+                // 这里是 dlsym 返回时的事件触发，打印解析地址
                 std::cout << "解析地址: 0x" << std::hex << e->symbol_addr << std::dec << "\n\n";
             }
-            break;
-
-        case 5: // function call
-            std::cout << "[" << timestamp << "] 事件：动态函数调用\n"
-                     << "函数名称: " << e->symbol_name << "\n\n";
             break;
     }
 }
@@ -175,7 +170,7 @@ static void handle_lost_events(void *ctx, int cpu, __u64 lost_cnt)
 
 void print_usage(const char* program_name) {
     std::cout << "用法: " << program_name << " [进程名]\n"
-              << "如果不指定进程名，将监控所有进程的动态链接信息。\n"
+              << "如果不指定进程名，将监控除本进程外其他所有进程的动态链接信息。\n"
               << "如果指定进程名，则只监控该进程的动态链接信息。\n";
 }
 
@@ -202,17 +197,28 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // 获取当前程序的名字（去掉路径）
+    const char* prog_name = strrchr(argv[0], '/');
+    prog_name = prog_name ? prog_name + 1 : argv[0];
+
+    // 将监控程序自己的名字存储到map中
+    __u32 key = 0;
+    int monitor_map_fd = bpf_map__fd(skel->maps.monitor_process);
+    if (bpf_map_update_elem(monitor_map_fd, &key, prog_name, BPF_ANY)) {
+        std::cerr << "无法设置监控程序名" << std::endl;
+        goto cleanup;
+    }
+
     // 如果指定了目标进程名，则设置到map中
     if (argc > 1) {
-        __u32 key = 0;
-        int map_fd = bpf_map__fd(skel->maps.target_process);
-        if (bpf_map_update_elem(map_fd, &key, argv[1], BPF_ANY)) {
+        int target_map_fd = bpf_map__fd(skel->maps.target_process);
+        if (bpf_map_update_elem(target_map_fd, &key, argv[1], BPF_ANY)) {
             std::cerr << "无法设置目标进程名" << std::endl;
             goto cleanup;
         }
         std::cout << "将只监控进程: " << argv[1] << std::endl;
     } else {
-        std::cout << "将监控所有进程" << std::endl;
+        std::cout << "将监控所有进程（除了自己）" << std::endl;
     }
 
     // 附加 BPF 程序
