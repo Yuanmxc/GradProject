@@ -45,17 +45,37 @@ struct {
     __type(value, char[64]);
 } temp_path SEC(".maps");
 
+// 定义 BPF map 用于存储目标进程名
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, __u32);
+    __type(value, char[16]);
+} target_process SEC(".maps");
+
 // 检查是否是目标进程
 static inline bool is_target_process(void)
 {
     char comm[16];
     bpf_get_current_comm(&comm, sizeof(comm));
     
-    // 比较进程名是否为 "math_test"
-    char target[] = "math_test";
-    for (int i = 0; i < sizeof(target) - 1; i++) {
-        if (comm[i] != target[i])
+    // 获取目标进程名
+    __u32 key = 0;
+    char *target = bpf_map_lookup_elem(&target_process, &key);
+    
+    // 如果没有设置目标进程名（target为NULL或者是空字符串），则监控所有进程
+    if (!target || target[0] == '\0') {
+        return true;
+    }
+    
+    // 比较进程名
+    for (int i = 0; i < sizeof(comm); i++) {
+        if (target[i] != comm[i]) {
             return false;
+        }
+        if (target[i] == '\0') {
+            break;
+        }
     }
     return true;
 }

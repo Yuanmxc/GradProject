@@ -173,21 +173,46 @@ static void handle_lost_events(void *ctx, int cpu, __u64 lost_cnt)
     printf("丢失 %llu 个事件\n", lost_cnt);
 }
 
+void print_usage(const char* program_name) {
+    std::cout << "用法: " << program_name << " [进程名]\n"
+              << "如果不指定进程名，将监控所有进程的动态链接信息。\n"
+              << "如果指定进程名，则只监控该进程的动态链接信息。\n";
+}
+
 int main(int argc, char *argv[])
 {
     struct dynlib_monitor_bpf *skel;
     struct perf_buffer *pb = NULL;
-    int err;
+    int err = 0;
 
     // 设置信号处理
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
+
+    // 检查是否有帮助选项
+    if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+        print_usage(argv[0]);
+        return 0;
+    }
 
     // 打开和加载 BPF 程序
     skel = dynlib_monitor_bpf__open_and_load();
     if (!skel) {
         std::cerr << "无法打开和加载 BPF 程序" << std::endl;
         return 1;
+    }
+
+    // 如果指定了目标进程名，则设置到map中
+    if (argc > 1) {
+        __u32 key = 0;
+        int map_fd = bpf_map__fd(skel->maps.target_process);
+        if (bpf_map_update_elem(map_fd, &key, argv[1], BPF_ANY)) {
+            std::cerr << "无法设置目标进程名" << std::endl;
+            goto cleanup;
+        }
+        std::cout << "将只监控进程: " << argv[1] << std::endl;
+    } else {
+        std::cout << "将监控所有进程" << std::endl;
     }
 
     // 附加 BPF 程序
