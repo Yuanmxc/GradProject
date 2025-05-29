@@ -9,7 +9,6 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <chrono>
 #include <vector>
 #include <dlfcn.h>
 #include <link.h>
@@ -145,7 +144,7 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
             std::cout << "[" << timestamp << "] 事件：显式库卸载\n"
                      << "调用函数: dlclose\n"
                      << "目标句柄: 0x" << std::hex << e->lib_addr << std::dec << "\n"
-                     << "卸载库路径: " << (strlen(e->lib_path) > 0 ? e->lib_path : "未知") << "\n"
+                     << "卸载库: " << (strlen(e->lib_path) > 0 ? e->lib_path : "未知") << "\n"
                      << "卸载结果: 成功\n\n";
             break;
 

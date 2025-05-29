@@ -37,6 +37,14 @@ struct {
     __uint(max_entries, 1024);
 } events SEC(".maps");
 
+// 定义 BPF map 用于存储临时路径
+struct {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1);
+    __type(key, __u32);
+    __type(value, char[64]);
+} temp_path SEC(".maps");
+
 // 检查是否是目标进程
 static inline bool is_target_process(void)
 {
@@ -60,11 +68,17 @@ int BPF_KPROBE(trace_dlopen, const char *filename, int flags)
         return 0;
 
     struct event e = {};
+    char path[64];
     
     e.timestamp = bpf_ktime_get_ns();
     e.pid = bpf_get_current_pid_tgid() >> 32;
     e.uid = bpf_get_current_uid_gid() & 0xFFFFFFFF;
     bpf_get_current_comm(&e.comm, sizeof(e.comm));
+    
+    // 读取路径并存储到临时map中
+    bpf_probe_read_user_str(path, sizeof(path), filename);
+    __u32 key = 0;
+    bpf_map_update_elem(&temp_path, &key, path, BPF_ANY);
     
     bpf_probe_read_user_str(e.lib_path, sizeof(e.lib_path), filename);
     e.event_type = 1;
@@ -82,7 +96,6 @@ int BPF_KRETPROBE(trace_dlopen_ret, void *retval)
         return 0;
 
     __u64 handle = (__u64)retval;
-    char path[64];
     struct event e = {};
     
     e.timestamp = bpf_ktime_get_ns();
@@ -93,13 +106,18 @@ int BPF_KRETPROBE(trace_dlopen_ret, void *retval)
     e.lib_addr = handle;
     e.event_type = 1;
 
-    // 从上下文中获取dlopen的第一个参数（文件名）
-    const char *filename = (const char *)PT_REGS_PARM1(ctx);
-    bpf_probe_read_user_str(path, sizeof(path), filename);
-    
-    // 存储句柄到路径的映射
-    if (handle != 0) {
+    // 从临时map中获取路径并存储到handle_to_path中
+    __u32 key = 0;
+    char *temp = bpf_map_lookup_elem(&temp_path, &key);
+    if (temp && handle != 0) {
+        // 将路径存储到handle_to_path中
+        char path[64];
+        bpf_probe_read_kernel_str(path, sizeof(path), temp);
         bpf_map_update_elem(&handle_to_path, &handle, path, BPF_ANY);
+        // 复制路径到事件中
+        __builtin_memcpy(e.lib_path, path, sizeof(path));
+        // 清理临时路径
+        bpf_map_delete_elem(&temp_path, &key);
     }
     
     bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &e, sizeof(e));
@@ -126,7 +144,8 @@ int BPF_KPROBE(trace_dlclose, void *handle)
     // 获取库路径
     char *path = bpf_map_lookup_elem(&handle_to_path, &e.lib_addr);
     if (path) {
-        bpf_probe_read_kernel_str(e.lib_path, sizeof(e.lib_path), path);
+        // 直接复制路径
+        __builtin_memcpy(e.lib_path, path, sizeof(e.lib_path));
         // 从映射中删除这个句柄
         bpf_map_delete_elem(&handle_to_path, &e.lib_addr);
     }
@@ -164,7 +183,8 @@ int BPF_KPROBE(trace_dlsym, void *handle, const char *symbol)
     // 获取库路径
     char *path = bpf_map_lookup_elem(&handle_to_path, &e.lib_addr);
     if (path) {
-        bpf_probe_read_kernel_str(e.lib_path, sizeof(e.lib_path), path);
+        // 直接复制路径
+        __builtin_memcpy(e.lib_path, path, sizeof(e.lib_path));
     }
     
     bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &e, sizeof(e));
