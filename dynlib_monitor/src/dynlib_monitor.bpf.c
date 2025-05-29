@@ -194,7 +194,7 @@ int BPF_KPROBE(trace_dlclose, void *handle)
     return 0;
 }
 
-// 跟踪动态库卸载返回值 - 只在成功时发送事件
+// 跟踪动态库卸载返回值
 SEC("uretprobe//usr/lib/libc.so.6:dlclose")
 int BPF_KRETPROBE(trace_dlclose_ret, int retval)
 {
