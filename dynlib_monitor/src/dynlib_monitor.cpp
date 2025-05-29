@@ -124,7 +124,7 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
         case 1: // explicit load
             if (e->lib_addr == 0) {
                 std::string real_path = get_lib_real_path(e->lib_path);
-                std::cout << "[" << timestamp << "] 事件：动态库加载\n"
+                std::cout << "[" << timestamp << "] 事件：动态库加载事件\n"
                          << "调用函数: dlopen\n"
                          << "加载库路径: " << real_path << "\n"
                          << "标志: " << get_dlopen_flags(e->flags) << "\n"
@@ -136,7 +136,7 @@ static void handle_event(void *ctx, int cpu, void *data, __u32 data_size)
             break;
 
         case 2: // unload
-            std::cout << "[" << timestamp << "] 事件：显式库卸载\n"
+            std::cout << "[" << timestamp << "] 事件：动态库卸载事件\n"
                      << "调用函数: dlclose\n"
                      << "目标句柄: 0x" << std::hex << e->lib_addr << std::dec << "\n"
                      << "卸载库路径: " << (strlen(e->lib_path) > 0 ? e->lib_path : "未知") << "\n"
