@@ -2273,6 +2273,7 @@ CMakeFiles/dynlib_monitor_gui.dir/src/processmanager.cpp.o: /home/Yuanmxc/Course
   /usr/include/qt/QtCore/QMap \
   /usr/include/qt/QtCore/QObject \
   /usr/include/qt/QtCore/QProcess \
+  /usr/include/qt/QtCore/QProcessEnvironment \
   /usr/include/qt/QtCore/QString \
   /usr/include/qt/QtCore/QVector \
   /usr/include/qt/QtCore/qalgorithms.h \
@@ -3929,6 +3930,8 @@ CMakeFiles/4.0.1/CMakeSystem.cmake:
 /usr/include/time.h:
 
 /usr/include/unistd.h:
+
+/usr/include/qt/QtCore/QProcessEnvironment:
 
 /usr/lib/cmake/Qt5/Qt5Config.cmake:
 
