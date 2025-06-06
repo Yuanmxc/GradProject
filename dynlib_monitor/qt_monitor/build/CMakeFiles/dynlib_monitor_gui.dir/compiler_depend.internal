@@ -2279,6 +2279,7 @@ CMakeFiles/dynlib_monitor_gui.dir/src/processmanager.cpp.o
  /usr/include/qt/QtCore/QMap
  /usr/include/qt/QtCore/QObject
  /usr/include/qt/QtCore/QProcess
+ /usr/include/qt/QtCore/QProcessEnvironment
  /usr/include/qt/QtCore/QString
  /usr/include/qt/QtCore/QVector
  /usr/include/qt/QtCore/qalgorithms.h

@@ -5,12 +5,12 @@ ARCH := $(shell uname -m | sed 's/x86_64/x86/' | sed 's/aarch64/arm64/')
 
 BPF_CFLAGS := -target bpf -D__TARGET_ARCH_$(ARCH) -g -O2 -D__BPF_TRACING__
 
-all: build/math_test build/dynlib_monitor
+all: build/test build/dynlib_monitor
 
 build:
 	mkdir -p build
 
-build/math_test: src/math_test.cpp build
+build/test: src/test.cpp build
 	$(CLANG++) $(CFLAGS) -o $@ $< -ldl
 
 build/dynlib_monitor: src/dynlib_monitor.cpp src/dynlib_monitor.skel.h
