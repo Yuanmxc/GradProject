@@ -1,0 +1,10 @@
+1. 上周计划完成情况
+上周我成功搭建了项目所需的开发环境。我在Linux系统上配置了eBPF开发环境，安装了clang、llvm、libbpf及其依赖，并验证了内核对eBPF的支持。同时，我也顺利安装了Qt5开发套件，包括Qt Creator和必要的Qt库。为了统一编译，我创建了项目的CMakeLists.txt文件，并初步配置了对eBPF程序、用户空间C++程序和Qt5前端的编译支持。所有工具链和库都能正常工作，为后续编码奠定了基础。
+
+2. 本周计划
+本周将进入项目的第一个编码阶段，主要写eBPF程序。我计划根据之前设计的event结构体和探针点，编写src/dynlib_monitor.bpf.c文件。具体内容包括：
+
+定义eBPF映射（maps）：实现用于内核态和用户态之间数据传递及存储中间状态的BPF maps，比如events perf buffer和handle_to_path哈希映射。
+编写Uprobe探针：实现dlopen、dlsym、dlclose等关键动态链接函数的uprobe和uretprobe探针。
+数据捕获：在探针里捕获进程ID、进程名、库路径、函数句柄、符号名等信息，填到event结构体里。
+事件发送：用bpf_perf_event_output把填好的事件结构体发到用户空间。 这一阶段的目标是让eBPF程序能初步捕获动态链接事件，给用户空间程序提供数据。
