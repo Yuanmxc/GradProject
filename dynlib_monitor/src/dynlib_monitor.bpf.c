@@ -18,7 +18,7 @@ struct event {
     char lib_path[64];   ///< 动态库路径
     __u64 lib_addr;      ///< 动态库加载地址或句柄
     char symbol_name[32]; ///< 符号名称
-    int event_type;      ///< 事件类型（1:加载, 2:卸载, 3:符号解析）
+    in event_type;      ///< 事件类型（1:加载, 2:卸载, 3:符号解析）
     int flags;           ///< dlopen的标志
     __u64 symbol_addr;   ///< 符号地址
     int result;          ///< 操作结果
